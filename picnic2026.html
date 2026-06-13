@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+<title>Пикник 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
+  html,body{background:#fff;font-family:'Montserrat',sans-serif;overscroll-behavior:none;height:100%}
+  input,button,textarea{-webkit-appearance:none;font-family:'Montserrat',sans-serif}
+  ::-webkit-scrollbar{width:0}
+  @keyframes fadeUp{from{opacity:0;transform:translateX(-50%) translateY(8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .row:active{background:#F7F7F7!important}
+  .pill:active{opacity:0.7}
+  .tappable:active{opacity:0.75;transform:scale(0.97)}
+  .scan-btn:active{transform:scale(0.96)}
+  #app{min-height:100vh;background:#fff;padding-bottom:72px}
+  .spinner{width:20px;height:20px;border:2.5px solid #2D7A4F;border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 14px}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, onValue, set, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyA73jmmRg_cP8CBs_WoCwGw19IWAN019K8",
+  authDomain: "piknik2026-1b058.firebaseapp.com",
+  databaseURL: "https://piknik2026-1b058-default-rtdb.firebaseio.com",
+  projectId: "piknik2026-1b058",
+  storageBucket: "piknik2026-1b058.firebasestorage.app",
+  messagingSenderId: "527323866231",
+  appId: "1:527323866231:web:8b8f89f1f8348a2ee35272"
+};
+
+const firebaseApp = initializeApp(firebaseConfig);
+const db = getDatabase(firebaseApp);
+const dbRef = ref(db, "picnic2026");
+
+// ── THEME ──────────────────────────────────────────────────────────────────
+const T = {
+  accent:"#2D7A4F", accentBg:"#EBF5EE",
+  text:"#111", muted:"#888", faint:"#BBB",
+  border:"#E8E8E8", surface:"#F5F5F5",
+  danger:"#D94040", warn:"#D97706",
+  blue:"#2563EB", purple:"#9333EA",
+};
+const AVATAR_COLORS = ["#2D7A4F","#2563EB","#9333EA","#D97706","#DB2777","#0891B2","#DC2626"];
+const avatarColor = n => AVATAR_COLORS[n.split("").reduce((a,c)=>a+c.charCodeAt(0),0)%AVATAR_COLORS.length];
+
+// ── DATA ───────────────────────────────────────────────────────────────────
+const INITIAL_ITEMS = [
+  {id:1,cat:"Мясо",name:"Свинина",unit:"кг",qty:"3"},
+  {id:2,cat:"Мясо",name:"Курица",unit:"кг",qty:"2,5"},
+  {id:3,cat:"Продукты",name:"Огурцы",unit:"кг",qty:"2"},
+  {id:4,cat:"Продукты",name:"Помидоры",unit:"кг",qty:"2"},
+  {id:5,cat:"Продукты",name:"Прочие овощи",unit:"кг",qty:"~3"},
+  {id:6,cat:"Продукты",name:"Зелень",unit:"пучок",qty:"~3"},
+  {id:7,cat:"Продукты",name:"Фрукты",unit:"кг",qty:"?"},
+  {id:8,cat:"Продукты",name:"Лимон",unit:"шт",qty:"2"},
+  {id:9,cat:"Продукты",name:"Оливки",unit:"бан",qty:"2-3"},
+  {id:10,cat:"Продукты",name:"Брынза",unit:"пач",qty:"1"},
+  {id:11,cat:"Продукты",name:"Дошики",unit:"пач",qty:"10-12"},
+  {id:12,cat:"Продукты",name:"Хлеб / Лаваш",unit:"шт",qty:"3-4"},
+  {id:13,cat:"Продукты",name:"Сыр",unit:"шт",qty:"1"},
+  {id:14,cat:"Продукты",name:"Колбаса",unit:"шт",qty:"1"},
+  {id:15,cat:"Продукты",name:"Сосиски",unit:"пач",qty:"2"},
+  {id:16,cat:"Продукты",name:"Яйца",unit:"шт",qty:"10"},
+  {id:17,cat:"Продукты",name:"Чай",unit:"пач",qty:"1"},
+  {id:18,cat:"Продукты",name:"Вода минеральная",unit:"бут",qty:"6"},
+  {id:19,cat:"Продукты",name:"Снеки к чаю",unit:"шт",qty:"??"},
+  {id:20,cat:"Продукты",name:"Снэки",unit:"шт",qty:"??"},
+  {id:21,cat:"Продукты",name:"Консервы",unit:"шт",qty:"??"},
+  {id:22,cat:"Продукты",name:"Салаты (морковка)",unit:"шт",qty:"2"},
+  {id:23,cat:"Продукты",name:"Майонез / кетчуп",unit:"шт",qty:"2"},
+  {id:24,cat:"Продукты",name:"Прочие соусы",unit:"шт",qty:"?"},
+  {id:25,cat:"Продукты",name:"Картошка (печь)",unit:"кг",qty:"1"},
+  {id:26,cat:"Продукты",name:"Закуски",unit:"шт",qty:"?"},
+  {id:27,cat:"Инвентарь",name:"Мангал",unit:"шт",qty:"1"},
+  {id:28,cat:"Инвентарь",name:"Шампуры",unit:"шт",qty:"несколько"},
+  {id:29,cat:"Инвентарь",name:"Решетка",unit:"шт",qty:"1"},
+  {id:30,cat:"Инвентарь",name:"Уголь",unit:"шт",qty:"2?"},
+  {id:31,cat:"Инвентарь",name:"Розжиг / горелка",unit:"шт",qty:"1"},
+  {id:32,cat:"Инвентарь",name:"Стол",unit:"шт",qty:"2"},
+  {id:33,cat:"Инвентарь",name:"Скатерть",unit:"шт",qty:"2"},
+  {id:34,cat:"Инвентарь",name:"Стулья",unit:"шт",qty:"?"},
+  {id:35,cat:"Инвентарь",name:"Вода питьевая и техническая",unit:"л",qty:"20?"},
+  {id:36,cat:"Инвентарь",name:"Пласт. посуда",unit:"шт",qty:"?"},
+  {id:37,cat:"Инвентарь",name:"Пакеты под мусор",unit:"шт",qty:"1"},
+  {id:38,cat:"Инвентарь",name:"Бумажные полотенца",unit:"пач",qty:"1"},
+  {id:39,cat:"Инвентарь",name:"Влажные салфетки",unit:"пач",qty:"1Б"},
+  {id:40,cat:"Инвентарь",name:"Чашки металл.",unit:"шт",qty:"?"},
+  {id:41,cat:"Инвентарь",name:"Прочая посуда",unit:"шт",qty:"?"},
+  {id:42,cat:"Инвентарь",name:"Фонари",unit:"шт",qty:"?"},
+  {id:43,cat:"Инвентарь",name:"Доски / ножи",unit:"шт",qty:"2-3"},
+  {id:44,cat:"Инвентарь",name:"Газовая плита + баллоны",unit:"шт",qty:"1"},
+  {id:45,cat:"Инвентарь",name:"Чайник",unit:"шт",qty:"1"},
+  {id:46,cat:"Инвентарь",name:"Сковорода",unit:"шт",qty:"1"},
+  {id:47,cat:"Инвентарь",name:"Посуда для пикника",unit:"шт",qty:"1"},
+  {id:48,cat:"Инвентарь",name:"Колонка",unit:"шт",qty:"1"},
+  {id:49,cat:"Инвентарь",name:"Фольга",unit:"шт",qty:"1"},
+  {id:50,cat:"Инвентарь",name:"Спрей от комаров / спиральки",unit:"шт",qty:"2-3"},
+];
+
+// ── STATE ──────────────────────────────────────────────────────────────────
+let state = {
+  userName: localStorage.getItem("picnic_name") || "",
+  tab: "list",
+  filter: "all",
+  items: INITIAL_ITEMS.map(i=>({...i,takenBy:null})),
+  receipts: [],
+  members: [],
+  saving: false,
+  scanning: false,
+  scanResult: null,
+  manualOpen: false,
+  manLabel: "", manAmount: "",
+  toast: null,
+  loading: true,
+};
+
+// ── FIREBASE ───────────────────────────────────────────────────────────────
+onValue(dbRef, snap => {
+  const d = snap.val();
+  if (d) {
+    if (d.items) state.items = d.items;
+    if (d.receipts) state.receipts = d.receipts;
+    if (d.members) state.members = d.members;
+  }
+  state.loading = false;
+  render();
+});
+
+async function saveToDb(patch) {
+  state.saving = true; render();
+  try {
+    const snap = await get(dbRef);
+    const prev = snap.val() || {};
+    await set(dbRef, {...prev, ...patch});
+  } catch(e){ console.error(e); }
+  state.saving = false; render();
+}
+
+// ── HELPERS ────────────────────────────────────────────────────────────────
+function fmtMoney(n) {
+  if(!n && n!==0) return "0 ₸";
+  return new Intl.NumberFormat("ru-KZ",{style:"currency",currency:"KZT",maximumFractionDigits:0}).format(n);
+}
+
+function avatar(name, size=30) {
+  const bg = avatarColor(name);
+  return `<div style="width:${size}px;height:${size}px;border-radius:50%;background:${bg};display:flex;align-items:center;justify-content:center;font-size:${Math.round(size*0.38)}px;font-weight:700;color:#fff;flex-shrink:0;letter-spacing:0.5px">${name[0].toUpperCase()}</div>`;
+}
+
+function check(on, mine) {
+  const color = mine ? T.accent : "#999";
+  const bg = on ? (mine ? T.accentBg : "#F0F0F0") : "#fff";
+  const border = on ? color : T.border;
+  const tick = on ? `<svg width="11" height="8" viewBox="0 0 11 8" fill="none"><path d="M1 3.5L4 6.5L10 1" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>` : "";
+  return `<div style="width:24px;height:24px;border-radius:50%;flex-shrink:0;background:${bg};border:2px solid ${border};display:flex;align-items:center;justify-content:center;transition:all 0.18s">${tick}</div>`;
+}
+
+function showToast(msg) {
+  state.toast = msg; render();
+  setTimeout(()=>{state.toast=null;render();}, 2600);
+}
+
+function addMember(who) {
+  const name = who || state.userName;
+  if(!name || state.members.includes(name)) return;
+  state.members = [...state.members, name];
+  saveToDb({members: state.members});
+}
+
+// ── ACTIONS ────────────────────────────────────────────────────────────────
+window._toggle = function(id) {
+  if(!state.userName) return;
+  state.items = state.items.map(item => {
+    if(item.id !== id) return item;
+    if(item.takenBy === state.userName) return {...item, takenBy:null};
+    if(item.takenBy) return item;
+    return {...item, takenBy:state.userName};
+  });
+  saveToDb({items:state.items}); addMember(); render();
+};
+
+window._release = function(id) {
+  state.items = state.items.map(i => i.id===id && i.takenBy===state.userName ? {...i,takenBy:null} : i);
+  saveToDb({items:state.items}); render();
+};
+
+window._setTab = function(t) { state.tab=t; render(); };
+window._setFilter = function(f) { state.filter=f; render(); };
+
+window._setName = function(v) { state.nameInput=v; render(); };
+window._joinName = function() {
+  const t = (state.nameInput||"").trim();
+  if(!t) return;
+  state.userName = t;
+  localStorage.setItem("picnic_name", t);
+  addMember(t); render();
+};
+window._nameKey = function(e) { if(e.key==="Enter") window._joinName(); };
+
+window._deleteReceipt = function(id) {
+  state.receipts = state.receipts.filter(r=>r.id!==id);
+  saveToDb({receipts:state.receipts}); render();
+};
+
+window._addManual = function() {
+  const amount = parseFloat((state.manAmount||"").replace(/\s/g,"").replace(",","."));
+  if(!(state.manLabel||"").trim() || isNaN(amount) || amount<=0) return;
+  const r = {id:Date.now(), who:state.userName, label:state.manLabel.trim(), amount, items:[]};
+  state.receipts = [...state.receipts, r];
+  saveToDb({receipts:state.receipts});
+  state.manLabel=""; state.manAmount=""; state.manualOpen=false;
+  addMember(); showToast("Добавлено: "+fmtMoney(amount));
+};
+
+window._setManLabel = function(v) { state.manLabel=v; };
+window._setManAmount = function(v) { state.manAmount=v; };
+window._toggleManual = function() { state.manualOpen=!state.manualOpen; render(); };
+window._closeManual = function() { state.manualOpen=false; render(); };
+
+window._confirmScan = function() {
+  if(!state.scanResult) return;
+  const r = {id:Date.now(), who:state.userName, label:state.scanResult.store||"Чек", amount:state.scanResult.total, items:state.scanResult.items||[]};
+  state.receipts = [...state.receipts, r];
+  saveToDb({receipts:state.receipts});
+  const amt = state.scanResult.total;
+  state.scanResult=null; addMember();
+  showToast("Добавлено: "+fmtMoney(amt));
+};
+window._cancelScan = function() { state.scanResult=null; render(); };
+
+window._handleFile = async function(input) {
+  const file = input.files[0];
+  if(!file) return;
+  state.scanning=true; state.scanResult=null; render();
+  try {
+    const b64 = await new Promise((res,rej)=>{
+      const r=new FileReader();
+      r.onload=()=>res(r.result.split(",")[1]);
+      r.onerror=()=>rej(new Error("fail"));
+      r.readAsDataURL(file);
+    });
+    const resp = await fetch("https://api.anthropic.com/v1/messages",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        model:"claude-sonnet-4-6", max_tokens:1000,
+        messages:[{role:"user",content:[
+          {type:"image",source:{type:"base64",media_type:file.type||"image/jpeg",data:b64}},
+          {type:"text",text:`Это фото чека. Верни ТОЛЬКО JSON без markdown:\n{"store":"название или пустая строка","total":число,"items":[{"name":"...","amount":число}]}\nЕсли нечитаемо: {"error":"не удалось прочитать"}`}
+        ]}]
+      })
+    });
+    const data = await resp.json();
+    const text = data.content?.find(b=>b.type==="text")?.text||"";
+    const parsed = JSON.parse(text.replace(/```json|```/g,"").trim());
+    if(parsed.error) showToast("Не удалось прочитать чек");
+    else { state.scanResult=parsed; render(); }
+  } catch(e){ showToast("Ошибка сканирования"); }
+  state.scanning=false; input.value=""; render();
+};
+
+window._resetAll = function() {
+  if(!confirm("Сбросить всё? Список и касса обнулятся.")) return;
+  state.items = INITIAL_ITEMS.map(i=>({...i,takenBy:null}));
+  state.receipts=[]; state.members=[];
+  saveToDb({items:state.items,receipts:[],members:[]}); render();
+};
+
+// ── RENDER ─────────────────────────────────────────────────────────────────
+function render() {
+  document.getElementById("app").innerHTML = buildHTML();
+  // restore input values after render
+  const ni = document.getElementById("nameInput");
+  if(ni) { ni.value = state.nameInput||""; ni.focus(); }
+  const ml = document.getElementById("manLabelInput");
+  if(ml) ml.value = state.manLabel||"";
+  const ma = document.getElementById("manAmountInput");
+  if(ma) ma.value = state.manAmount||"";
+}
+
+function buildHTML() {
+  if(state.loading) return `
+    <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column">
+      <div class="spinner"></div>
+      <div style="color:${T.muted};font-size:13px;font-weight:500">Загружаем...</div>
+    </div>`;
+
+  if(!state.userName) return buildLogin();
+  return buildMain();
+}
+
+function buildLogin() {
+  return `
+  <div style="min-height:100vh;background:#fff;display:flex;align-items:center;justify-content:center;padding:24px">
+    <div style="width:100%;max-width:340px">
+      <div style="margin-bottom:36px">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+          <div style="width:52px;height:52px;border-radius:14px;background:${T.accent};display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><path d="M14 3C14 3 6 8 6 16C6 20.418 9.582 24 14 24C18.418 24 22 20.418 22 16C22 8 14 3Z" fill="rgba(255,255,255,0.2)" stroke="white" stroke-width="1.5"/><path d="M10 16l3 3 6-6" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div>
+            <div style="font-size:22px;font-weight:800;color:${T.text};letter-spacing:-0.5px;line-height:1">Пикник 2026</div>
+            <div style="font-size:12px;color:${T.muted};font-weight:500;margin-top:3px">список и касса</div>
+          </div>
+        </div>
+        <div style="width:100%;height:2px;background:linear-gradient(90deg,${T.accent},transparent)"></div>
+      </div>
+      <div style="font-size:12px;font-weight:700;color:${T.muted};text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Как тебя зовут?</div>
+      <input id="nameInput" placeholder="Введи имя"
+        oninput="state.nameInput=this.value"
+        onkeydown="_nameKey(event)"
+        style="width:100%;padding:14px 16px;background:${T.surface};border:1.5px solid ${T.border};border-radius:12px;font-size:16px;font-weight:500;color:${T.text};outline:none;margin-bottom:12px;caret-color:${T.accent}"/>
+      <button onclick="_joinName()" class="tappable"
+        style="width:100%;padding:14px;background:${T.accent};color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;letter-spacing:0.3px">
+        Войти
+      </button>
+      <div style="margin-top:14px;font-size:12px;color:${T.muted};text-align:center;line-height:1.6">
+        Список общий — все видят изменения в реальном времени
+      </div>
+    </div>
+  </div>`;
+}
+
+function buildMain() {
+  const cats = [...new Set(INITIAL_ITEMS.map(i=>i.cat))];
+  const unclaimed = state.items.filter(i=>!i.takenBy).length;
+  const myTaken = state.items.filter(i=>i.takenBy===state.userName).length;
+  const taken = state.items.filter(i=>i.takenBy).length;
+  const pct = Math.round(taken/state.items.length*100);
+  const totalSpent = state.receipts.reduce((s,r)=>s+r.amount,0);
+  const everyone = [...new Set([...state.members,...state.items.filter(i=>i.takenBy).map(i=>i.takenBy),...state.receipts.map(r=>r.who)])].filter(Boolean);
+  const perPerson = everyone.length>0 ? totalSpent/everyone.length : 0;
+  const balances = everyone.map(m=>{
+    const paid = state.receipts.filter(r=>r.who===m).reduce((s,r)=>s+r.amount,0);
+    return {name:m, paid, owes:perPerson-paid};
+  });
+
+  const filtered = state.items.filter(i =>
+    state.filter==="mine" ? i.takenBy===state.userName :
+    state.filter==="unclaimed" ? !i.takenBy : true
+  );
+  const grouped = cats.reduce((acc,cat)=>{
+    const list = filtered.filter(i=>i.cat===cat);
+    if(list.length) acc[cat]=list;
+    return acc;
+  },{});
+
+  // ── HEADER
+  const header = `
+  <div style="position:sticky;top:0;z-index:20;background:rgba(255,255,255,0.94);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid ${T.border}">
+    <div style="max-width:640px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;padding:0 18px;height:54px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:8px;height:8px;border-radius:50%;background:${state.saving?T.warn:T.accent};transition:background 0.3s"></div>
+        <span style="font-size:16px;font-weight:800;color:${T.text};letter-spacing:-0.3px">Пикник 2026</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        ${state.saving?`<div style="width:14px;height:14px;border:2px solid ${T.accent};border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite"></div>`:""}
+        ${avatar(state.userName, 30)}
+      </div>
+    </div>
+  </div>`;
+
+  // ── LIST TAB
+  let tabContent = "";
+  if(state.tab==="list") {
+    const filterBtns = ["all","unclaimed","mine"].map(k=>{
+      const labels={"all":"Все","unclaimed":`Не взято  ${unclaimed}`,"mine":`Мои  ${myTaken}`};
+      const on = state.filter===k;
+      return `<button onclick="_setFilter('${k}')" class="pill" style="padding:8px 18px;border-radius:20px;border:1.5px solid ${on?T.accent:T.border};background:${on?T.accentBg:"#fff"};color:${on?T.accent:T.muted};font-size:13px;font-weight:${on?700:500};cursor:pointer;white-space:nowrap;transition:all 0.15s">${labels[k]}</button>`;
+    }).join("");
+
+    const listGroups = Object.entries(grouped).map(([cat,catItems])=>{
+      const rows = catItems.map((item,idx)=>{
+        const isMine = item.takenBy===state.userName;
+        const isTaken = !!item.takenBy && !isMine;
+        const right = item.takenBy
+          ? `${avatar(item.takenBy,22)}<span style="font-size:13px;color:${isMine?T.accent:T.muted};font-weight:${isMine?700:500}">${item.takenBy}</span>${isMine?`<button onclick="event.stopPropagation();_release(${item.id})" style="width:18px;height:18px;border-radius:50%;background:rgba(217,64,64,0.1);border:1px solid rgba(217,64,64,0.25);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0"><svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1 1l6 6M7 1L1 7" stroke="${T.danger}" stroke-width="1.6" stroke-linecap="round"/></svg></button>`:""}`
+          : `<span style="font-size:12px;color:${T.warn};font-weight:600">не взято</span>`;
+        return `
+        <div onclick="${!isTaken?`_toggle(${item.id})`:""}" class="row" style="display:flex;align-items:center;gap:12px;padding:13px 16px;background:${isMine?T.accentBg:"#fff"};cursor:${isTaken?"default":"pointer"};border-bottom:${idx<catItems.length-1?`1px solid ${T.border}`:"none"}">
+          ${check(!!item.takenBy,isMine)}
+          <div style="flex:1;min-width:0">
+            <div style="font-size:15px;font-weight:500;color:${item.takenBy?T.faint:T.text};text-decoration:${isTaken?"line-through":"none"}">${item.name}</div>
+            <div style="font-size:11px;color:${T.faint};margin-top:1px;font-weight:500">${item.qty} ${item.unit}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:7px;flex-shrink:0">${right}</div>
+        </div>`;
+      }).join("");
+      return `
+      <div style="margin-bottom:12px">
+        <div style="font-size:10px;font-weight:700;color:${T.muted};text-transform:uppercase;letter-spacing:1.5px;padding:0 4px 8px">${cat}</div>
+        <div style="background:#fff;border-radius:16px;border:1px solid ${T.border};overflow:hidden">${rows}</div>
+      </div>`;
+    }).join("");
+
+    tabContent = `
+    <!-- Hero -->
+    <div style="background:${T.accent};border-radius:20px;padding:22px 22px 20px;margin-bottom:14px;position:relative;overflow:hidden">
+      <div style="position:absolute;top:-40px;right:-40px;width:180px;height:180px;border-radius:50%;border:1.5px solid rgba(255,255,255,0.12);pointer-events:none"></div>
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;position:relative">
+        <div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.65);font-weight:600;text-transform:uppercase;letter-spacing:0.8px">Готовность</div>
+          <div style="font-size:52px;font-weight:800;color:#fff;letter-spacing:-2px;line-height:1;margin-top:4px">${pct}<span style="font-size:22px;font-weight:600">%</span></div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:12px;color:rgba(255,255,255,0.65);font-weight:600">Взято</div>
+          <div style="font-size:28px;font-weight:800;color:#fff;letter-spacing:-1px">${taken}<span style="font-size:14px;color:rgba(255,255,255,0.6);font-weight:500">/${state.items.length}</span></div>
+        </div>
+      </div>
+      <div style="margin-top:16px;height:5px;background:rgba(255,255,255,0.2);border-radius:3px;overflow:hidden">
+        <div style="height:100%;border-radius:3px;background:rgba(255,255,255,0.9);width:${pct}%;transition:width 0.5s"></div>
+      </div>
+      <div style="display:flex;gap:20px;margin-top:12px">
+        <span style="font-size:13px;color:rgba(255,255,255,0.75);font-weight:500">Мои <span style="color:#fff;font-weight:700">${myTaken}</span></span>
+        <span style="font-size:13px;color:rgba(255,255,255,0.75);font-weight:500">Не взято <span style="color:${unclaimed>0?"#FCD34D":"#fff"};font-weight:700">${unclaimed}</span></span>
+      </div>
+    </div>
+    <!-- Filters -->
+    <div style="display:flex;gap:8px;margin-bottom:14px;overflow-x:auto;padding-bottom:2px">${filterBtns}</div>
+    <!-- List -->
+    ${listGroups}
+    ${Object.keys(grouped).length===0?`<div style="text-align:center;color:${T.faint};margin-top:60px;font-size:14px;font-weight:500">Ничего не найдено</div>`:""}`;
+  }
+
+  // ── CASH TAB
+  if(state.tab==="cash") {
+    const scanPreview = state.scanResult ? `
+    <div style="background:#fff;border:1.5px solid ${T.accent};border-radius:16px;padding:18px;margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;color:${T.accent};text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px">Чек распознан</div>
+      ${state.scanResult.store?`<div style="font-size:15px;font-weight:600;color:${T.text};margin-bottom:8px">${state.scanResult.store}</div>`:""}
+      ${(state.scanResult.items||[]).slice(0,5).map((it,i)=>`
+        <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid ${T.border}">
+          <span style="font-size:13px;color:${T.muted}">${it.name}</span>
+          <span style="font-size:13px;color:${T.text};font-weight:600">${fmtMoney(it.amount)}</span>
+        </div>`).join("")}
+      ${(state.scanResult.items||[]).length>5?`<div style="font-size:11px;color:${T.faint};margin-top:4px">и ещё ${state.scanResult.items.length-5}</div>`:""}
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px">
+        <div style="font-size:22px;font-weight:800;color:${T.accent}">${fmtMoney(state.scanResult.total)}</div>
+        <div style="display:flex;gap:8px">
+          <button onclick="_cancelScan()" style="padding:9px 16px;border-radius:10px;border:1px solid ${T.border};background:#fff;color:${T.muted};cursor:pointer;font-size:13px;font-weight:600">Отмена</button>
+          <button onclick="_confirmScan()" style="padding:9px 18px;border-radius:10px;border:none;background:${T.accent};color:#fff;cursor:pointer;font-size:13px;font-weight:700">Добавить</button>
+        </div>
+      </div>
+    </div>` : "";
+
+    const manForm = state.manualOpen ? `
+    <div style="background:#fff;border:1px solid ${T.border};border-radius:16px;padding:18px;margin-bottom:14px">
+      <div style="font-size:12px;font-weight:700;color:${T.muted};text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px">Добавить расход</div>
+      <input id="manLabelInput" placeholder="Что купил" oninput="_setManLabel(this.value)"
+        style="width:100%;padding:11px 14px;background:${T.surface};border:1px solid ${T.border};border-radius:10px;color:${T.text};font-size:14px;font-weight:500;outline:none;margin-bottom:10px;caret-color:${T.accent}"/>
+      <input id="manAmountInput" placeholder="Сумма в тенге" type="number" inputmode="numeric" oninput="_setManAmount(this.value)"
+        style="width:100%;padding:11px 14px;background:${T.surface};border:1px solid ${T.border};border-radius:10px;color:${T.text};font-size:14px;font-weight:500;outline:none;margin-bottom:12px;caret-color:${T.accent}"/>
+      <div style="display:flex;gap:8px">
+        <button onclick="_closeManual()" style="flex:1;padding:11px;border-radius:10px;border:1px solid ${T.border};background:#fff;color:${T.muted};cursor:pointer;font-size:13px;font-weight:600">Отмена</button>
+        <button onclick="_addManual()" style="flex:2;padding:11px;border-radius:10px;border:none;background:${T.accent};color:#fff;cursor:pointer;font-size:13px;font-weight:700">Добавить</button>
+      </div>
+    </div>` : "";
+
+    const receiptsList = state.receipts.length>0 ? `
+    <div>
+      <div style="font-size:10px;font-weight:700;color:${T.muted};text-transform:uppercase;letter-spacing:1.5px;padding:0 4px 8px">Расходы</div>
+      <div style="background:#fff;border-radius:16px;border:1px solid ${T.border};overflow:hidden">
+        ${state.receipts.map((r,idx)=>`
+        <div style="display:flex;align-items:center;gap:12px;padding:13px 16px;border-bottom:${idx<state.receipts.length-1?`1px solid ${T.border}`:"none"}">
+          ${avatar(r.who,30)}
+          <div style="flex:1;min-width:0">
+            <div style="font-size:14px;font-weight:600;color:${T.text}">${r.label}</div>
+            <div style="font-size:12px;color:${T.muted};margin-top:1px">${r.who}</div>
+          </div>
+          <div style="font-size:16px;font-weight:800;color:${T.blue}">${fmtMoney(r.amount)}</div>
+          ${r.who===state.userName?`<button onclick="_deleteReceipt(${r.id})" style="width:18px;height:18px;border-radius:50%;background:rgba(217,64,64,0.08);border:1px solid rgba(217,64,64,0.2);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0"><svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1 1l6 6M7 1L1 7" stroke="${T.danger}" stroke-width="1.6" stroke-linecap="round"/></svg></button>`:""}
+        </div>`).join("")}
+      </div>
+    </div>` : "";
+
+    const balanceBlock = everyone.length>0&&totalSpent>0 ? `
+    <div style="margin-top:14px;padding-top:14px;border-top:1px solid ${T.border}">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:12px">
+        <div style="flex:1;height:1px;background:${T.border}"></div>
+        <span style="font-size:11px;color:${T.faint};font-weight:600;text-transform:uppercase;letter-spacing:0.8px">С каждого ${fmtMoney(perPerson)}</span>
+        <div style="flex:1;height:1px;background:${T.border}"></div>
+      </div>
+      ${balances.map(b=>`
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid ${T.border}">
+        ${avatar(b.name,26)}
+        <span style="flex:1;font-size:14px;font-weight:600;color:${T.text}">${b.name}</span>
+        <span style="font-size:12px;color:${T.muted}">заплатил ${fmtMoney(b.paid)}</span>
+        <span style="font-size:13px;font-weight:700;color:${b.owes>50?T.danger:b.owes<-50?T.accent:T.faint}">${b.owes>50?`−${fmtMoney(b.owes)}`:b.owes<-50?`+${fmtMoney(-b.owes)}`:"ок"}</span>
+      </div>`).join("")}
+    </div>` : "";
+
+    tabContent = `
+    <div style="background:#fff;border:1px solid ${T.border};border-radius:20px;padding:22px 22px 20px;margin-bottom:14px;box-shadow:0 2px 12px rgba(0,0,0,0.06)">
+      <div style="font-size:11px;font-weight:700;color:${T.muted};text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Общая сумма</div>
+      <div style="font-size:44px;font-weight:800;color:${T.blue};letter-spacing:-2px;line-height:1">${fmtMoney(totalSpent)}</div>
+      ${balanceBlock}
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+      <button onclick="document.getElementById('fileInput').click()" class="scan-btn" ${state.scanning?"disabled":""} style="padding:18px 14px;border-radius:16px;background:${state.scanning?T.surface:T.accentBg};border:1.5px solid ${T.accent};color:${T.accent};font-size:13px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;transition:all 0.15s">
+        ${state.scanning
+          ?`<div style="width:22px;height:22px;border:2.5px solid ${T.accent};border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite"></div>`
+          :`<svg width="26" height="26" viewBox="0 0 26 26" fill="none"><rect x="3" y="5" width="20" height="16" rx="3" stroke="${T.accent}" stroke-width="1.6"/><circle cx="13" cy="13" r="4" stroke="${T.accent}" stroke-width="1.6"/><rect x="9" y="3" width="8" height="3" rx="1.5" fill="${T.accent}"/></svg>`}
+        ${state.scanning?"Читаем...":"Сфото чек"}
+      </button>
+      <button onclick="_toggleManual()" class="scan-btn" style="padding:18px 14px;border-radius:16px;background:#fff;border:1.5px solid ${T.border};color:${T.text};font-size:13px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;transition:all 0.15s">
+        <svg width="26" height="26" viewBox="0 0 26 26" fill="none"><path d="M13 4v18M4 13h18" stroke="${T.muted}" stroke-width="2" stroke-linecap="round"/></svg>
+        Вручную
+      </button>
+    </div>
+    <input id="fileInput" type="file" accept="image/*" capture="environment" onchange="_handleFile(this)" style="display:none"/>
+    ${scanPreview}
+    ${manForm}
+    ${receiptsList}
+    ${state.receipts.length===0&&!state.scanResult&&!state.manualOpen?`<div style="text-align:center;color:${T.faint};margin-top:48px;font-size:14px;font-weight:500;line-height:1.7">Пока пусто.<br/>Сфотографируй чек или добавь вручную.</div>`:""}`;
+  }
+
+  // ── ИТОГ TAB
+  if(state.tab==="itog") {
+    if(everyone.length===0) {
+      tabContent = `<div style="text-align:center;color:${T.faint};margin-top:60px;font-size:14px;font-weight:500;line-height:1.7">Пока никто ничего не отметил.<br/>Зайди в Список и возьми пункты.</div>`;
+    } else {
+      const heroBlock = totalSpent>0 ? `
+      <div style="background:${T.accent};border-radius:20px;padding:20px 22px;margin-bottom:14px;color:#fff">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;opacity:0.7;margin-bottom:6px">Итог по кассе</div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline">
+          <div>
+            <div style="font-size:36px;font-weight:800;letter-spacing:-1.5px">${fmtMoney(totalSpent)}</div>
+            <div style="font-size:13px;opacity:0.75;margin-top:4px">С каждого: ${fmtMoney(perPerson)}</div>
+          </div>
+          <div style="text-align:right;font-size:13px;opacity:0.75">${everyone.length} участников</div>
+        </div>
+      </div>` : "";
+
+      const cards = everyone.map(person=>{
+        const myItems = state.items.filter(i=>i.takenBy===person);
+        const myReceipts = state.receipts.filter(r=>r.who===person);
+        const paid = myReceipts.reduce((s,r)=>s+r.amount,0);
+        const balance = paid - perPerson;
+        const badgeHtml = totalSpent>0 ? `
+        <div style="padding:6px 12px;border-radius:10px;background:${balance>50?T.accentBg:balance<-50?"#FEF0F0":T.surface};border:1px solid ${balance>50?T.accent:balance<-50?T.danger:T.border}">
+          <div style="font-size:11px;font-weight:700;color:${balance>50?T.accent:balance<-50?T.danger:T.muted};text-align:center">${balance>50?"получить":balance<-50?"должен":"ок"}</div>
+          ${Math.abs(balance)>50?`<div style="font-size:14px;font-weight:800;color:${balance>50?T.accent:T.danger};text-align:center;margin-top:1px">${fmtMoney(Math.abs(balance))}</div>`:""}
+        </div>` : "";
+
+        const itemTags = myItems.length>0 ? `
+        <div style="padding:12px 18px;border-bottom:${myReceipts.length>0?`1px solid ${T.border}`:"none"}">
+          <div style="font-size:10px;font-weight:700;color:${T.faint};text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Везёт</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px">
+            ${myItems.map(item=>`<span style="font-size:12px;font-weight:500;color:${T.text};background:${T.surface};border-radius:8px;padding:4px 10px;border:1px solid ${T.border}">${item.name}</span>`).join("")}
+          </div>
+        </div>` : "";
+
+        const receiptRows = myReceipts.length>0 ? `
+        <div style="padding:12px 18px">
+          <div style="font-size:10px;font-weight:700;color:${T.faint};text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Оплатил</div>
+          ${myReceipts.map((r,i)=>`
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:${i<myReceipts.length-1?`1px solid ${T.border}`:"none"}">
+            <span style="font-size:13px;color:${T.muted}">${r.label}</span>
+            <span style="font-size:13px;font-weight:700;color:${T.blue}">${fmtMoney(r.amount)}</span>
+          </div>`).join("")}
+        </div>` : "";
+
+        return `
+        <div style="background:#fff;border-radius:18px;border:1px solid ${T.border};margin-bottom:12px;overflow:hidden;box-shadow:0 1px 6px rgba(0,0,0,0.05)">
+          <div style="display:flex;align-items:center;gap:12px;padding:16px 18px 14px;border-bottom:${myItems.length>0||myReceipts.length>0?`1px solid ${T.border}`:"none"}">
+            ${avatar(person,40)}
+            <div style="flex:1">
+              <div style="font-size:16px;font-weight:800;color:${T.text};letter-spacing:-0.3px">${person}</div>
+              <div style="font-size:12px;color:${T.muted};margin-top:2px">${myItems.length} вещей · заплатил ${fmtMoney(paid)}</div>
+            </div>
+            ${badgeHtml}
+          </div>
+          ${itemTags}
+          ${receiptRows}
+        </div>`;
+      }).join("");
+
+      // transfer instructions
+      const debtors = balances.filter(b=>b.owes>50).sort((a,b)=>b.owes-a.owes);
+      const creditors = balances.filter(b=>b.owes<-50).sort((a,b)=>a.owes-b.owes);
+      let transfers = "";
+      if(totalSpent>0 && debtors.length>0) {
+        const rows = debtors.flatMap(d=>creditors.map(c=>`
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid ${T.border}">
+          ${avatar(d.name,26)}
+          <div style="flex:1;font-size:13px;color:${T.text}">
+            <span style="font-weight:600">${d.name}</span>
+            <span style="color:${T.muted}"> → </span>
+            <span style="font-weight:600">${c.name}</span>
+          </div>
+          <span style="font-size:14px;font-weight:800;color:${T.accent}">${fmtMoney(Math.min(d.owes,-c.owes))}</span>
+        </div>`)).join("");
+        transfers = `
+        <div style="background:#fff;border-radius:18px;border:1px solid ${T.border};padding:16px 18px;margin-bottom:14px">
+          <div style="font-size:10px;font-weight:700;color:${T.faint};text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Кто кому переводит</div>
+          ${rows}
+        </div>`;
+      }
+
+      tabContent = heroBlock + cards + transfers;
+    }
+  }
+
+  // ── TAB BAR
+  const tabs = [
+    {key:"list", label:"Список", badge:unclaimed>0?unclaimed:null, badgeColor:T.warn,
+     icon: on=>`<svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M8 5.5h10M8 11h10M8 16.5h10" stroke="${on?T.accent:T.faint}" stroke-width="1.8" stroke-linecap="round"/><circle cx="4.5" cy="5.5" r="1.5" fill="${on?T.accent:T.faint}"/><circle cx="4.5" cy="11" r="1.5" fill="${on?T.accent:T.faint}"/><circle cx="4.5" cy="16.5" r="1.5" fill="${on?T.accent:T.faint}"/></svg>`},
+    {key:"cash", label:"Касса", badge:state.receipts.length>0?state.receipts.length:null, badgeColor:T.blue,
+     icon: on=>`<svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="2" y="6" width="18" height="12" rx="2.5" stroke="${on?T.blue:T.faint}" stroke-width="1.8"/><path d="M6 11h10M6 14h5" stroke="${on?T.blue:T.faint}" stroke-width="1.5" stroke-linecap="round"/><path d="M2 10h18" stroke="${on?T.blue:T.faint}" stroke-width="1.5"/></svg>`},
+    {key:"itog", label:"Итог", badge:null, badgeColor:T.purple,
+     icon: on=>`<svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="8.5" stroke="${on?T.purple:T.faint}" stroke-width="1.8"/><path d="M11 7v4.5l3 2" stroke="${on?T.purple:T.faint}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`},
+  ];
+
+  const tabBar = `
+  <div style="position:fixed;bottom:0;left:0;right:0;z-index:30;background:rgba(255,255,255,0.94);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-top:1px solid ${T.border};display:flex;padding-bottom:env(safe-area-inset-bottom,0px)">
+    ${tabs.map(t=>{
+      const on = state.tab===t.key;
+      const activeColor = t.key==="cash"?T.blue:t.key==="itog"?T.purple:T.accent;
+      return `
+      <button onclick="_setTab('${t.key}')" class="pill" style="flex:1;padding:10px 8px 12px;background:transparent;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;position:relative">
+        ${t.badge!=null?`<div style="position:absolute;top:7px;right:calc(50% - 18px);background:${t.badgeColor};color:#fff;border-radius:8px;font-size:9px;font-weight:700;padding:1px 5px;min-width:15px;text-align:center">${t.badge}</div>`:""}
+        ${t.icon(on)}
+        <span style="font-size:10px;font-weight:${on?700:500};color:${on?activeColor:T.faint};letter-spacing:0.3px">${t.label}</span>
+      </button>`;
+    }).join("")}
+  </div>`;
+
+  const toast = state.toast ? `
+  <div style="position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:${T.text};color:#fff;padding:10px 20px;border-radius:10px;font-size:13px;font-weight:500;box-shadow:0 8px 24px rgba(0,0,0,0.18);z-index:100;white-space:nowrap;animation:fadeUp 0.22s ease">
+    ${state.toast}
+  </div>` : "";
+
+  const resetBtn = `
+  <div style="text-align:center;margin-top:28px">
+    <button onclick="_resetAll()" class="tappable" style="background:none;border:none;cursor:pointer;color:${T.faint};font-size:12px;font-weight:600;padding:8px;text-transform:uppercase;letter-spacing:0.5px">
+      Сбросить всё
+    </button>
+  </div>`;
+
+  return `
+  ${header}
+  <div style="max-width:640px;margin:0 auto;padding:16px 16px 8px">
+    ${tabContent}
+    ${resetBtn}
+  </div>
+  ${tabBar}
+  ${toast}`;
+}
+
+// init
+render();
+</script>
+</body>
+</html>
